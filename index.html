@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immodz Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1e2b20; /* Dark green matching the logo */
+            color: #f8f8f8;
+        }
+
+        #chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            max-height: 500px;
+            background-color: #1e2b20; /* Dark green */
+            border: 2px solid #cfaf6d; /* Gold color from logo */
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chatbot-header {
+            background-color: #cfaf6d; /* Gold color */
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #1e2b20; /* Dark green text */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #chatbot-header img {
+            width: 30px;
+            height: 30px;
+        }
+
+        #chatbot-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #f8f8f8;
+            color: #1e2b20;
+        }
+
+        .chatbot-message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .chatbot-message.user {
+            background-color: #cfaf6d; /* Gold */
+            color: #1e2b20;
+            align-self: flex-end;
+        }
+
+        .chatbot-message.bot {
+            background-color: #e4e4e4; /* Light gray */
+            color: #1e2b20;
+        }
+
+        #chatbot-input {
+            display: flex;
+            padding: 10px;
+            border-top: 2px solid #cfaf6d; /* Gold */
+            background-color: #f8f8f8;
+        }
+
+        #chatbot-input input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #cfaf6d; /* Gold */
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        #chatbot-input button {
+            background-color: #cfaf6d; /* Gold */
+            color: #1e2b20;
+            border: none;
+            padding: 10px 15px;
+            margin-left: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #chatbot-input button:hover {
+            background-color: #b08c50;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chatbot-container">
+    <div id="chatbot-header">
+        <span>Immodz Assistant</span>
+        <img src="immodz_logo.jpg" alt="Immodz Logo">
+    </div>
+    <div id="chatbot-messages">
+        <!-- Chat messages will appear here -->
+    </div>
+    <div id="chatbot-input">
+        <input type="text" id="user-input" placeholder="Type your message here...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    const messagesContainer = document.getElementById('chatbot-messages');
+
+    function sendMessage() {
+        const userInput = document.getElementById('user-input');
+        const message = userInput.value.trim();
+        if (message === '') return;
+
+        // Add user message to chat
+        const userMessageDiv = document.createElement('div');
+        userMessageDiv.className = 'chatbot-message user';
+        userMessageDiv.textContent = message;
+        messagesContainer.appendChild(userMessageDiv);
+
+        // Clear input field
+        userInput.value = '';
+
+        // Fetch chatbot response
+        fetch('http://127.0.0.1:5000/query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: message }),
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            const botMessageDiv = document.createElement('div');
+            botMessageDiv.className = 'chatbot-message bot';
+
+            if (data.status === 'success') {
+                botMessageDiv.textContent = data.data
+                    .map(item => `Property: ${item.Property}, City: ${item.City}, Price: ${item['Price Range']}`)
+                    .join('\n');
+            } else if (data.status === 'no_results') {
+                botMessageDiv.textContent = data.suggestion || "No matching properties found. Try different criteria.";
+            } else {
+                botMessageDiv.textContent = data.message || "Sorry, something went wrong.";
+            }
+
+            messagesContainer.appendChild(botMessageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        })
+        .catch((error) => {
+            const botMessageDiv = document.createElement('div');
+            botMessageDiv.className = 'chatbot-message bot';
+            botMessageDiv.textContent = "An error occurred. Please try again later.";
+            messagesContainer.appendChild(botMessageDiv);
+            console.error(error);
+        });
+    }
+</script>
+
+</body>
+</html>
